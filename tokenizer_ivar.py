@@ -18,7 +18,7 @@ def filereader(inputfile):
 
     return return_list
 
-def encoder(word_list):
+def encoder(word_list, max_dict_len, min_freqwentie):
     token_dict = {}
     token_value_dict = {}
     counter = 1
@@ -126,7 +126,10 @@ def encoder(word_list):
     result_token_dict = reversed_token_dict.copy()
     max_len = 10
     # condense all words into tokens
-    while max_len > 2:
+    while max_len >= 2:
+        if len(result_token_dict) == max_dict_len:
+            break
+
         result_token_list, result_token_dict = pair_merger(result_token_list,reversed_token_dict)
         temp = []
         for i in range(len(result_token_list)):
