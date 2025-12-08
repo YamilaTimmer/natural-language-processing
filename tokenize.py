@@ -203,6 +203,10 @@ def decode(tokens_list, id_to_tok):
 
 
 def main():
+    # --help of learn --help
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print_help()
+        return
     if len(sys.argv) < 3:
         print("Usage: python tokenize_.py [learn|tokenize|decode] <input_file> [enc_file] [max_tokens] [min_freq]")
         return
@@ -302,6 +306,36 @@ def main():
         # Print een bevestiging voor de gebruiker
         print("Decoded text saved:", path)
 
+def print_help():
+    print("""
+Byte-Pair Encoding tokenizer
+
+Usage:
+  python tokenize.py learn <txt_file> [max_tokens (default = 1000)] [min_freq (default = 2)]
+  python tokenize.py tokenize <txt_file> <enc_file>
+  python tokenize.py decode <tok_file> <enc_file>
+
+Modes:
+  learn
+    Leest een .txt tekstbestand in en leert een Byte-Pair Encoding (BPE).
+    De encoding wordt opgeslagen in een .enc bestand met zelfde naam als txt bestand.
+
+    Optional arguments:
+      max_tokens   maximaal aantal tokens dat mag worden aangemaakt (default: 1000)
+      min_freq     minimale frequentie van een token-paar om samen te voegen (default: 2)
+
+  tokenize
+    Leest een .txt bestand en zet het om naar tokens met een gegeven .enc bestand.
+    Het resultaat wordt opgeslagen in een .tok bestand met zelfde naam als txt en enc bestand.
+
+  decode
+    Leest een .tok bestand en zet dit terug om naar leesbare tekst
+    met behulp van een .enc bestand.
+    Het resultaat wordt opgeslagen als _decoded.txt met zelfde naam als tok en enc bestand.
+
+Options:
+  -h, --help   Toon deze helptekst
+""")
 
 if __name__ == "__main__":
     main()
