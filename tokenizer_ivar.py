@@ -91,6 +91,10 @@ def encoder(word_list, max_dict_len, min_freqwentie):
         higest_value_index = value_list.index(max(value_list))
         new_string_key = key_list[higest_value_index]
 
+        value_check = max(value_list)
+        if value_check <min_freqwentie:
+            return None, None
+
         old_key_list = []
         for key in tokens_dict.keys():
             old_key_list.append(key)
