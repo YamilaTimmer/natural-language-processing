@@ -8,32 +8,32 @@ begin met willekeurige token
 vanaf daar trek tokens volgens de berekende waarschijnlijkheid
 
 """
-from collections import Counter
+import sys
+from collections import Counter, defaultdict
 from random import choices
 from nlp import filereader
-from tokenize import encoder, decode
-
 
 def determine_probability(tokens, n):
+    ngram_counts = Counter()
+    next_tokens = defaultdict(Counter)
+
     # Splits tekst op tot ngrams
-    ngrams = [tuple(tuple(tok) for tok in tokens[i:i + n]) for i in range(len(tokens) - n)]
-    nplus1grams = [tuple(tuple(tok) for tok in tokens[i:i + n + 1]) for i in range(len(tokens) - n)]
+    for i in range(len(tokens) - n):
+        ngram = tuple(tokens[i:i + n])
+        next_token = tokens[i + n]
+        ngram_counts[ngram] +=1
+        next_tokens[ngram][next_token] += 1
+
 
     # Hoe vaak de ngrams voorkomen en hoe vaak ngrams van één lengte langer voorkomen, om alle woorden te bepalen
     # die andere woorden kunnen opvolgen
-    ngram_counts = Counter(ngrams)
-    nplus1_counts = Counter(nplus1grams)
-
     probability_dict = {}
 
-    # tel welke combinaties de ngrams kunnen opvolgen en hoe vaak dit gebeurt
-    for ngram in ngrams:
+    for ngram, next_count in next_tokens.items():
         probability_dict[ngram] = {}
-        for nplus1, count in nplus1_counts.items():
-            if nplus1[0:n] == ngram:
-                total_occurence = ngram_counts[ngram]
-                # Voeg woord + kans hierop toe
-                probability_dict[ngram].update({nplus1[-1]:count/total_occurence})
+        total_occurrence = ngram_counts[ngram]
+        for token, count in next_count.items():
+            probability_dict[ngram][token] = count / total_occurrence
 
     return probability_dict, ngram_counts
 
@@ -51,8 +51,8 @@ def generate_text(n, tokens, text_len, probability_dict, ngram_counts):
 
     # genereer tekst voor grotere ngrams
     else:
-        current_ngram = tuple(choices(list(ngram_counts.keys()), weights=list(ngram_counts.values()), k=1))[0]
-        sequence.extend(current_ngram)
+        current_ngram = list(choices(list(ngram_counts.keys()), weights=list(ngram_counts.values()), k=1))[0]
+        sequence.append(list(current_ngram))
 
         for _ in range(text_len):
             next_word = choices(list(probability_dict[current_ngram].keys()), weights=list(probability_dict[current_ngram].values()), k=1)[0]
@@ -61,24 +61,50 @@ def generate_text(n, tokens, text_len, probability_dict, ngram_counts):
 
     return sequence
 
-def write_output(sequence, id_to_tok):
-    decoded_sequence = decode(sequence, id_to_tok)
+def write_output(sequence, output_file):
 
-    with open("output.txt", "w") as output:
-        output.write(decoded_sequence)
+    with open(output_file, "w") as output:
+        output.write(str(sequence))
 
     return
 
+def print_help():
+    print("""
+    N-gram text generator
+
+    Usage:
+        python ngram.py <input_file.tok> <n> <length> <output_file>
+      
+    Parameters:
+        <input_file.tok>: tok bestand met tokens, kan worden gegenereerd met behulp van de tokenizer
+        <n>: getal dat de lengte van de N-grammen bepaald
+        <length>: de lengte van de te genereren tekst
+        <output_file>: het pad waar de gegenereerde tekst naartoe geschreven wordt
+    
+    Options:
+      -h, --help   Toon deze helptekst
+    """)
 
 def main():
-    text = filereader("gutenberg_cancer.txt")
-    text = text[1:10000]
-    words_tokens, id_to_tok = encoder(text, max_tokens=160, min_freq=20)
+    # --help of --help
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print_help()
+        return
 
-    n = 3
-    probability_dict, ngram_counts = determine_probability(words_tokens, 3)
-    sequence = generate_text(3, words_tokens, 100, probability_dict, ngram_counts)
-    write_output(sequence, id_to_tok)
+    if len(sys.argv) < 4:
+        print("Usage: python ngram.py <input_file.tok> <n> <length> <output_file>")
+        return
+
+    tokens = sys.argv[-4]
+    n = int(sys.argv[-3])
+    text_len = int(sys.argv[-2])
+    output_file = sys.argv[-1]
+
+    tokenized_text = filereader(tokens)
+    probability_dict, ngram_counts = determine_probability(tokenized_text, n)
+    sequence = generate_text(n, tokenized_text, text_len, probability_dict, ngram_counts)
+    write_output(sequence, output_file)
+
 
 if __name__ == "__main__":
 
