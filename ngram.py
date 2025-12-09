@@ -14,11 +14,10 @@ from nlp import filereader
 from tokenize import encoder, decode
 
 
-def determine_probability(text, tokens, n):
-    print(tokens)
+def determine_probability(tokens, n):
     # Splits tekst op tot ngrams
-    ngrams = [tuple(text[i:i + n]) for i in range(len(text) - n)]
-    nplus1grams = [tuple(text[i:i + n + 1]) for i in range(len(text) - n)]
+    ngrams = [tuple(tuple(tok) for tok in tokens[i:i + n]) for i in range(len(tokens) - n)]
+    nplus1grams = [tuple(tuple(tok) for tok in tokens[i:i + n + 1]) for i in range(len(tokens) - n)]
 
     # Hoe vaak de ngrams voorkomen en hoe vaak ngrams van één lengte langer voorkomen, om alle woorden te bepalen
     # die andere woorden kunnen opvolgen
@@ -38,15 +37,13 @@ def determine_probability(text, tokens, n):
 
     return probability_dict, ngram_counts
 
-def generate_text(n, text, text_len, probability_dict, ngram_counts):
+def generate_text(n, tokens, text_len, probability_dict, ngram_counts):
     sequence = []
-    counter = Counter(text)
-
-
-    # Genereer start tokens, aan de hand van hoe vaak ze voorkomen
 
     # genereer tekst voor unigrams
     if n == 1:
+        counter = Counter(tokens)
+
         start_tok = tuple(choices(list(counter.keys()), weights=list(counter.values()), k=n))
         sequence.extend(start_tok)
         rest_tok = choices(list(counter.keys()), weights=list(counter.values()), k=text_len)
@@ -54,21 +51,21 @@ def generate_text(n, text, text_len, probability_dict, ngram_counts):
 
     # genereer tekst voor grotere ngrams
     else:
-        start_tok = tuple(choices(list(ngram_counts.keys()), weights=list(ngram_counts.values()), k=1))[0]
-        sequence.extend(start_tok)
+        current_ngram = tuple(choices(list(ngram_counts.keys()), weights=list(ngram_counts.values()), k=1))[0]
+        sequence.extend(current_ngram)
 
-        for i in range(text_len):
-            next_word = choices(list(probability_dict[start_tok].keys()), weights=list(probability_dict[start_tok].values()), k=1)[0]
-            sequence.append(next_word)
-            start_tok = start_tok[1:] + (next_word,)
+        for _ in range(text_len):
+            next_word = choices(list(probability_dict[current_ngram].keys()), weights=list(probability_dict[current_ngram].values()), k=1)[0]
+            sequence.append(list(next_word))
+            current_ngram = current_ngram[1:] + (next_word,)
 
     return sequence
 
-def write_output(sequence):
-    with open("output.txt", "w") as output:
-        delimiter = " "
+def write_output(sequence, id_to_tok):
+    decoded_sequence = decode(sequence, id_to_tok)
 
-        output.write(delimiter.join(sequence))
+    with open("output.txt", "w") as output:
+        output.write(decoded_sequence)
 
     return
 
@@ -77,13 +74,11 @@ def main():
     text = filereader("gutenberg_cancer.txt")
     text = text[1:10000]
     words_tokens, id_to_tok = encoder(text, max_tokens=160, min_freq=20)
-    tokens = list(id_to_tok.values())
 
     n = 3
-    probability_dict, ngram_counts = determine_probability(text, tokens, 3)
-    sequence = generate_text(3, text, 100, probability_dict, ngram_counts)
-    write_output(sequence)
-
+    probability_dict, ngram_counts = determine_probability(words_tokens, 3)
+    sequence = generate_text(3, words_tokens, 100, probability_dict, ngram_counts)
+    write_output(sequence, id_to_tok)
 
 if __name__ == "__main__":
 
