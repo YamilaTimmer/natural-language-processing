@@ -1,4 +1,5 @@
 from collections import Counter
+import pandas as pd
 
 def filereader(file_path):
     """
@@ -151,3 +152,157 @@ def decode(tokens_list, id_to_tok):
     for w in tokens_list:
         words.append("".join(id_to_tok[t] for t in w))
     return " ".join(words)
+
+
+def file_merger(list_of_files):
+    """
+    Deze functie zet een lijst met filepaths om naar gezamenlijke lijst met met woorden en de hoeveelheid woorder per bestand.
+    
+    param: list_of_files [string filepaths]
+    
+    return: final_list_of_words [merged list of words of all files]
+    return: list_of_len_per_file [int len of words per file]
+    """
+    list_of_words_per_file = []
+    list_of_len_per_file = []
+    final_list_of_words = []
+
+    for file_index in range(len(list_of_files)):
+        words = filereader(list_of_files[file_index])
+        list_of_words_per_file.append(words)
+        len_of_doc = len(words)
+        list_of_len_per_file.append(len_of_doc)
+
+    for list_index in range(len(list_of_words_per_file)):
+        current_word_list = list_of_words_per_file[list_index]
+        for word_index in range(len(current_word_list)):
+            current_word = current_word_list[word_index]
+            final_list_of_words.append(current_word)
+
+    return final_list_of_words, list_of_len_per_file
+
+
+def group_encoder(max_tokens,min_freq,list_of_words,list_of_doc_len):
+    """
+    Deze functie gebruikt de encoder functie op alle bestanden zodat hier een gezamenlijk tokenizatie op word toegepast.
+    en splitst de lijst met woorden terug naar de lijsten met woorden per bestand, maar dan getokeniseerd
+    
+    Param: max tokens, maximale hoeveelheid tokens dat gegenereerd kan worden
+    Param: min freq, minimale freqwentie dat nodig is om een token te defineren
+    Param: list_of_words, voledige lijst met woorden
+    Param: list_of_doc_len, lijst met de lengte van de hoeveelheid woorden per bestand
+
+    return: uncoupled_token_list_per_doc, lijst[document] van lijsten[woorden in tokens]
+    return groupt_token_dict, key = token, value = woorden/letters
+    """
+    uncoupled_token_lists_per_doc = []
+
+    groupt_list_of_words, groupt_token_dict = encoder(list_of_words,max_tokens,min_freq)
+    start = 0
+    stop = 0
+    # uncoupeling based on old len per doc
+    for len_index in range(len(list_of_doc_len)):
+        current_len = list_of_doc_len[len_index]-1
+        stop = current_len + start
+        words_in_file = groupt_list_of_words[start:stop]
+        uncoupled_token_lists_per_doc.append(words_in_file)
+        start = stop+1
+
+    return uncoupled_token_lists_per_doc, groupt_token_dict
+
+
+def multi_hot_encoding(token_lists,tokens_dict,list_of_names):
+    """
+    Deze functie genereerd een multi hot encoding dataframe
+
+    """    
+    def word_checker(current_token_lists,key):
+        """
+        deze functie checkt of de key in de lijst met tokenlijsten zit
+        Return: boolean
+        """
+        result = False
+        for word_index in range(len(current_token_lists)):
+            current_word_in_tokens = current_token_lists[word_index]
+            if key in current_word_in_tokens:
+                result = True
+            else:
+                continue
+
+        return result
+    
+    data = {}
+    row_list = []
+    
+    for file_index in range(len(list_of_names)):
+        file_name = list_of_names[file_index]
+        data[file_name] = []
+
+    for key in tokens_dict.keys():
+        row_list.append(key)
+        for file_index in range(len(list_of_names)):
+            current_file = list_of_names[file_index]
+            current_token_list = token_lists[file_index]
+            bool_check = word_checker(current_token_list,key)
+            if bool_check == True:
+                old_list = data.get(current_file)
+                old_list.append(1)
+                data[current_file] = old_list
+            else:
+                old_list = data.get(current_file)
+                old_list.append(0)
+                data[current_file] = old_list
+
+    df = pd.DataFrame(data, index=row_list)
+
+
+    return df
+
+
+def frequency_checker(token_lists,tokens_dict,list_of_names,result_type):
+    """
+    Deze functie telt de hoeveelheid keren dat een token voorkomt in een bestand
+    """
+    def word_counter(current_token_lists,key):
+        """   
+        Telt de hoeveelheid dat de key in de lijst van tokens voorkomt
+        """
+        count = 0
+        for word_index in range(len(current_token_lists)):
+            current_word_in_tokens = current_token_lists[word_index]
+            if key in current_word_in_tokens:
+                count+=1
+            else:
+                continue
+        return count
+    
+
+    
+    data = {}
+    total_token_counter = 0
+
+    for file_index in range(len(list_of_names)):
+        file_name = list_of_names[file_index]
+        data[file_name] = []
+    
+    row_list = []
+    for key in tokens_dict.keys():
+        row_list.append(key)
+        for file_index in range(len(list_of_names)):
+            current_file = list_of_names[file_index]
+            current_token_list = token_lists[file_index]
+            word_count = word_counter(current_token_list,key)
+            total_token_counter += word_count
+            old_list = data.get(current_file)
+            old_list.append(word_count)
+            data[current_file] = old_list
+
+    df = pd.DataFrame(data,index=row_list)
+    if result_type == "frac":
+        df = df / total_token_counter
+
+    if result_type == "perc":
+        df = df/total_token_counter*100
+
+    return df
+
