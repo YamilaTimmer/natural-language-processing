@@ -12,7 +12,7 @@ def filereader(file_path):
     """
     # Open en lees het bestand
     with open(file_path, "r", encoding="utf-8") as f:
-        text = f.read()
+        text = f.read().lower()
     # Verwijder witruimte aan het begin/eind en splitst de tekst in woorden
     return text.strip().split()
 

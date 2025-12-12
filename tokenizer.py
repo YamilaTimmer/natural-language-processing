@@ -87,7 +87,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-t, --max_tokens",
+        "-t", "--max_tokens",
         type=int,
         default=1000,
         help="Max aantal BPE-tokens (alleen voor learn)"
