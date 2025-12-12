@@ -208,7 +208,7 @@ def main():
         print_help()
         return
     if len(sys.argv) < 3:
-        print("Usage: python tokenize_.py [learn|tokenize|decode] <input_file> [enc_file] [max_tokens] [min_freq]")
+        print("Usage: python tokenizer.py [learn|tokenize|decode] <input_file> [enc_file] [max_tokens] [min_freq]")
         return
 
     # Het eerste argument bepaalt de modus: learn, tokenize of decode
@@ -237,7 +237,7 @@ def main():
     elif mode == "tokenize":
         # Controleer of de gebruiker een .enc bestand heeft opgegeven
         if len(sys.argv) < 4:
-            print("Usage: python tokenize_.py tokenize <txt_file> <enc_file>")
+            print("Usage: python tokenizer.py tokenize <txt_file> <enc_file>")
             return
         # Het pad naar het .enc bestand
         enc_file = sys.argv[3]
@@ -276,7 +276,7 @@ def main():
     elif mode == "decode":
         # Controleer of de gebruiker een .enc bestand heeft opgegeven
         if len(sys.argv) < 4:
-            print("Usage: python tokenize_.py decode <tok_file> <enc_file>")
+            print("Usage: python tokenizer.py decode <tok_file> <enc_file>")
             return
         # Het pad naar het .enc bestand
         enc_file = sys.argv[3]
@@ -311,9 +311,9 @@ def print_help():
 Byte-Pair Encoding tokenizer
 
 Usage:
-  python tokenize.py learn <txt_file> [max_tokens (default = 1000)] [min_freq (default = 2)]
-  python tokenize.py tokenize <txt_file> <enc_file>
-  python tokenize.py decode <tok_file> <enc_file>
+  python tokeniz.py learn <txt_file> [max_tokens (default = 1000)] [min_freq (default = 2)]
+  python tokeniz.py tokenize <txt_file> <enc_file>
+  python tokeniz.py decode <tok_file> <enc_file>
 
 Modes:
   learn

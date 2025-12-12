@@ -49,9 +49,9 @@ def print_help():
 Byte-Pair Encoding tokenizer
 
 Usage:
-  python tokenize_.py learn <txt_file> [max_tokens] [min_freq]
-  python tokenize_.py tokenize <txt_file> <enc_file>
-  python tokenize_.py decode <tok_file> <enc_file>
+  python tokenizer.py learn <txt_file> [max_tokens] [min_freq]
+  python tokenizer.py tokenize <txt_file> <enc_file>
+  python tokenizer.py decode <tok_file> <enc_file>
 
 Modes:
   learn
@@ -77,7 +77,7 @@ def main():
         return
 
     if len(sys.argv) < 3:
-        print("Usage: python tokenize_.py [learn|tokenize|decode] <input_file>")
+        print("Usage: python tokenizer.py [learn|tokenize|decode] <input_file>")
         return
 
     # Modus en inputbestand
@@ -101,7 +101,7 @@ def main():
 
     elif mode == "tokenize":
         if len(sys.argv) < 4:
-            print("Usage: python tokenize_.py tokenize <txt_file> <enc_file>")
+            print("Usage: python tokenizer.py tokenize <txt_file> <enc_file>")
             return
 
         enc_file = sys.argv[3]
@@ -130,9 +130,10 @@ def main():
 
         save_tok(words_tokens, input_file)
 
+
     elif mode == "decode":
         if len(sys.argv) < 4:
-            print("Usage: python tokenize_.py decode <tok_file> <enc_file>")
+            print("Usage: python tokenizer.py decode <tok_file> <enc_file>")
             return
 
         enc_file = sys.argv[3]
