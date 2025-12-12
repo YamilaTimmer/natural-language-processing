@@ -1,9 +1,29 @@
-import sys
+"""
+Byte-Pair Encoding tokenizer
+
+Usage:
+  python tokenizer.py learn <txt_file> [max_tokens] [min_freq]
+  python tokenizer.py tokenize <txt_file> <enc_file>
+  python tokenizer.py decode <tok_file> <enc_file>
+
+Modes:
+  learn
+    Leest een .txt tekstbestand in en leert een Byte-Pair Encoding (BPE).
+    De encoding wordt opgeslagen in een .enc bestand.
+
+  tokenize
+    Zet een .txt bestand om naar tokens met een gegeven .enc bestand.
+    Output wordt opgeslagen als .tok.
+
+  decode
+    Zet een .tok bestand terug om naar leesbare tekst met behulp van een .enc bestand.
+
+"""
+import argparse
 import os
 
 # Importeer algemene NLP-functionaliteit
 from nlp import filereader, encoder, load_enc, decode
-
 
 def save_enc(id_to_tok, input_file):
     """
@@ -43,68 +63,65 @@ def save_tok(words_tokens, input_file):
 
     print("Tokens saved:", path)
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Tokenizer: learn BPE, tokenize tekst, decode tokens",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
 
-def print_help():
-    print("""
-Byte-Pair Encoding tokenizer
+    parser.add_argument(
+        "mode",
+        choices=["learn", "tokenize", "decode"],
+        help="Kies een operatie: learn, tokenize of decode"
+    )
 
-Usage:
-  python tokenizer.py learn <txt_file> [max_tokens] [min_freq]
-  python tokenizer.py tokenize <txt_file> <enc_file>
-  python tokenizer.py decode <tok_file> <enc_file>
+    parser.add_argument(
+        "-i", "--input",
+        help="Inputbestand (.txt voor learn/tokenize, .tok voor decode)"
+    )
 
-Modes:
-  learn
-    Leest een .txt tekstbestand in en leert een Byte-Pair Encoding (BPE).
-    De encoding wordt opgeslagen in een .enc bestand.
+    parser.add_argument(
+        "-e", "--enc",
+        type=str,
+        help="Encodingbestand (.enc) – verplicht voor tokenize en decode"
+    )
 
-  tokenize
-    Zet een .txt bestand om naar tokens met een gegeven .enc bestand.
-    Output wordt opgeslagen als .tok.
+    parser.add_argument(
+        "-t, --max_tokens",
+        type=int,
+        default=1000,
+        help="Max aantal BPE-tokens (alleen voor learn)"
+    )
 
-  decode
-    Zet een .tok bestand terug om naar leesbare tekst met behulp van een .enc bestand.
+    parser.add_argument(
+        "-f", "--min_freq",
+        type=int,
+        default=2,
+        help="Minimale frequentie voor merges (alleen voor learn)"
+    )
 
-Options:
-  -h, --help   Toon deze helptekst
-""")
+    return parser.parse_args()
 
 
 def main():
-    # --help of -h
-    if "-h" in sys.argv or "--help" in sys.argv:
-        print_help()
-        return
-
-    if len(sys.argv) < 3:
-        print("Usage: python tokenizer.py [learn|tokenize|decode] <input_file>")
-        return
-
     # Modus en inputbestand
-    mode = sys.argv[1]
-    input_file = sys.argv[2]
-
-    # Default waarden
-    max_tokens = 1000
-    min_freq = 2
+    args = parse_args()
+    mode = args.mode
+    input_file = args.input
 
     if mode == "learn":
-        if len(sys.argv) > 3:
-            max_tokens = int(sys.argv[3])
-        if len(sys.argv) > 4:
-            min_freq = int(sys.argv[4])
 
         words = filereader(input_file)
-        _, id_to_tok = encoder(words, max_tokens=max_tokens, min_freq=min_freq)
+        _, id_to_tok = encoder(words, max_tokens=args.max_tokens, min_freq=args.min_freq)
         save_enc(id_to_tok, input_file)
         print(f"BPE learned! Max tokens respected: {len(id_to_tok)}")
 
     elif mode == "tokenize":
-        if len(sys.argv) < 4:
-            print("Usage: python tokenizer.py tokenize <txt_file> <enc_file>")
+        if not args.enc:
+            print("Error: tokenize vereist --enc <bestand>")
             return
 
-        enc_file = sys.argv[3]
+        enc_file = args.enc
         words = filereader(input_file)
         id_to_tok = load_enc(enc_file)
         tok_to_id = {v: k for k, v in id_to_tok.items()}
@@ -130,13 +147,12 @@ def main():
 
         save_tok(words_tokens, input_file)
 
-
     elif mode == "decode":
-        if len(sys.argv) < 4:
-            print("Usage: python tokenizer.py decode <tok_file> <enc_file>")
+        if not args.enc:
+            print("Error: decode vereist --enc <bestand>")
             return
 
-        enc_file = sys.argv[3]
+        enc_file = args.enc
         id_to_tok = load_enc(enc_file)
 
         tokens_list = []
@@ -154,7 +170,6 @@ def main():
             f.write(text)
 
         print("Decoded text saved:", path)
-
 
 if __name__ == "__main__":
     main()
