@@ -34,7 +34,6 @@ def get_pairs(words_tokens):
         # Voeg elk paar opeenvolgende tokens toe
         for i in range(len(w) - 1):
             pairs.append((w[i], w[i + 1]))
-
     return pairs
 
 
@@ -87,32 +86,40 @@ def encoder(words, max_tokens=1000, min_freq=2):
         pairs = Counter(get_pairs(words_tokens))
         if not pairs:
             break
-        top_pair, freq = pairs.most_common(1)[0]
-        if freq < min_freq:
-            break
 
-        if len(id_to_tok) + 1 > max_tokens:
-            break
+        for top_pair, freq in pairs.most_common():
+            tok1 = id_to_tok[top_pair[0]]
+            tok2 = id_to_tok[top_pair[1]]
 
-        # Voeg nieuwe token toe
-        new_tok = id_to_tok[top_pair[0]] + id_to_tok[top_pair[1]]
-        new_id = max(id_to_tok.keys()) + 1
-        id_to_tok[new_id] = new_tok
+            # Als een van de tekens een speciaal teken is wordt deze overgeslagen
+            if not tok1.isalpha() or not tok2.isalpha():
+                continue
 
-        # Update woordenlijst met nieuwe token
-        new_words_tokens = []
-        for w in words_tokens:
-            i = 0
-            new_w = []
-            while i < len(w):
-                if i < len(w) - 1 and (w[i], w[i + 1]) == top_pair:
-                    new_w.append(new_id)
-                    i += 2
-                else:
-                    new_w.append(w[i])
-                    i += 1
-            new_words_tokens.append(new_w)
-        words_tokens = new_words_tokens
+            if freq < min_freq:
+                continue
+
+            if len(id_to_tok) + 1 > max_tokens:
+                break
+
+            # Voeg nieuwe token toe
+            new_tok = id_to_tok[top_pair[0]] + id_to_tok[top_pair[1]]
+            new_id = max(id_to_tok.keys()) + 1
+            id_to_tok[new_id] = new_tok
+
+            # Update woordenlijst met nieuwe token
+            new_words_tokens = []
+            for w in words_tokens:
+                i = 0
+                new_w = []
+                while i < len(w):
+                    if i < len(w) - 1 and (w[i], w[i + 1]) == top_pair:
+                        new_w.append(new_id)
+                        i += 2
+                    else:
+                        new_w.append(w[i])
+                        i += 1
+                new_words_tokens.append(new_w)
+            words_tokens = new_words_tokens
 
     return words_tokens, id_to_tok
 
