@@ -152,7 +152,23 @@ def decode(tokens_list, id_to_tok):
     for w in tokens_list:
         words.append("".join(id_to_tok[t] for t in w))
     return " ".join(words)
+    
+def load_tok_file(tok_file):
+    """Lees een .tok bestand (lijst van token-ID's)
 
+    Parameters:
+        tok_file : pad naar het .tok bestand
+
+    Returns:
+        tokenized_data : lijst van token-ID's
+    """
+    tokenized_data = []
+    with open(tok_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                tokenized_data.append(list(map(int, line.split())))
+    return tokenized_data
 
 def file_merger(list_of_files):
     """
@@ -306,3 +322,17 @@ def frequency_checker(token_lists,tokens_dict,list_of_names,result_type):
 
     return df
 
+def build_token_mappings(enc):
+    """Maak dicts van token:index en index:token
+    Parameters:
+        enc : lijst van token-ID's
+
+    Returns:
+        all_tokens : lijst van token-ID's
+        token_to_idx : lijst van token-ID's
+        idx_to_token : lijst van token-ID's
+    """
+    all_tokens = list(enc.values())
+    token_to_idx = {tok: i for i, tok in enumerate(all_tokens)}
+    idx_to_token = {i: tok for i, tok in enumerate(all_tokens)}
+    return all_tokens, token_to_idx, idx_to_token
