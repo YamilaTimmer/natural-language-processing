@@ -1,5 +1,6 @@
 from collections import Counter
 import pandas as pd
+import math
 
 def filereader(file_path):
     """
@@ -236,8 +237,12 @@ def group_encoder(max_tokens,min_freq,list_of_words,list_of_doc_len):
 
 def multi_hot_encoding(token_lists,tokens_dict,list_of_names):
     """
-    Deze functie genereerd een multi hot encoding dataframe
+    Deze functie genereerd een multi-hot encoding dataframe
 
+    param: token_lists [file[list[tokens, int]]]
+    param: token_dict {key, int token: value, str token strings}
+    param: list_of_names [str, filenames]
+    return: df pandas dataframe with rows=tokens cols=files, values = 0 or 1
     """    
     def word_checker(current_token_lists,key):
         """
@@ -285,6 +290,10 @@ def multi_hot_encoding(token_lists,tokens_dict,list_of_names):
 def frequency_checker(token_lists,tokens_dict,list_of_names,result_type):
     """
     Deze functie telt de hoeveelheid keren dat een token voorkomt in een bestand
+    param: token_lists [file[list[tokens, int]]]
+    param: token_dict {key, int token: value, str token strings}
+    param: list_of_names [str, filenames]
+    return: df pandas dataframe with rows=tokens cols=files, values = count per key
     """
     def word_counter(current_token_lists,key):
         """   
@@ -343,3 +352,86 @@ def build_token_mappings(enc):
     token_to_idx = {tok: i for i, tok in enumerate(all_tokens)}
     idx_to_token = {i: tok for i, tok in enumerate(all_tokens)}
     return all_tokens, token_to_idx, idx_to_token
+
+
+def tf_idf_calc(token_lists,tokens_dict,list_of_names):
+    """
+    Deze functie maakt een tf_idf dataframe
+    
+    param: token_lists [file[list[tokens, int]]]
+    param: token_dict {key, int token: value, str token strings}
+    param: list_of_names [str, filenames]
+    return: df pandas dataframe with rows=tokens cols=files, values = tf_idf waarde
+    """
+    def word_counter(current_token_lists,key):
+        count = 0
+        for word_index in range(len(current_token_lists)):
+            current_word_in_tokens = current_token_lists[word_index]
+            if key in current_word_in_tokens:
+                count+=1
+            else:
+                continue
+        return count
+    
+    data = {}
+    total_token_counter = []
+    dict_list = []
+    result = {}
+
+    for file_index in range(len(list_of_names)):
+        file_name = list_of_names[file_index]
+        data[file_name] = []
+        result[file_name] = []
+        total_token_counter.append(0)
+        empty_dict = {}
+        dict_list.append(empty_dict)
+    
+    row_list = []
+    for key in tokens_dict.keys():
+        row_list.append(key)
+        for file_index in range(len(list_of_names)):
+            doc_count_dict = dict_list[file_index]
+            current_file = list_of_names[file_index]
+            current_token_list = token_lists[file_index]
+
+            word_count = word_counter(current_token_list,key)
+            doc_count_dict[key] = word_count
+            dict_list.append(doc_count_dict)
+            total_token_counter[file_index] += word_count
+
+            old_list = data.get(current_file)
+            old_list.append(word_count)
+            data[current_file] = old_list
+
+    for key in tokens_dict.keys():
+        for file_index in range(len(list_of_names)):
+            current_file = list_of_names[file_index]
+            old_list = result.get(current_file)
+
+            total_token_file_count = total_token_counter[file_index]
+            current_token_file_dict = dict_list[file_index]
+            current_token_file_count = current_token_file_dict.get(key)
+            token_fraction_in_file = current_token_file_count/total_token_file_count
+
+            sum_of_all_tokens = sum(total_token_counter)
+            list_of_key_values = []
+            
+            for file_id in range(len(list_of_names)):
+                current_dict = dict_list[file_id]
+                current_value = current_dict.get(key)
+                list_of_key_values.append(current_value)
+            
+            sum_of_key_tokens = sum(list_of_key_values)
+
+            try: 
+                log_of_total = math.log(sum_of_all_tokens/sum_of_key_tokens)
+            except ZeroDivisionError:
+                log_of_total = 0
+            
+            tf_idf = token_fraction_in_file*log_of_total
+            old_list.append(tf_idf)
+            result[current_file] = old_list
+    
+    df = pd.DataFrame(result, index=row_list)
+    return df 
+
